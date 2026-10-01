@@ -1,4 +1,5 @@
-![DevPulse Dashboard](./docs/images/devpulse.png)   
+![DevPulse Dashboard](./docs/images/devpulse.png)
+
 # DevPulse
 
 > **Status:** Core implementation complete and locally verified.
@@ -10,7 +11,7 @@
 Self-hosted reliable webhook delivery infrastructure.
 
 DevPulse delivers application events to external HTTP endpoints using durable PostgreSQL persistence, a transactional outbox, asynchronous Kafka/Redpanda processing, signed HTTP requests, retries, idempotency, tenant isolation, and delivery observability. It is software for teams to run under their own infrastructure, not a hosted production service.
- 
+
 ![DevPulse Dashboard](./docs/images/webhook.png)
 
 ## Why DevPulse?
