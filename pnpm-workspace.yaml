@@ -1,4 +1,10 @@
-﻿packages:
+packages:
   - "apps/*"
   - "services/*"
   - "packages/*"
+allowBuilds:
+  "@apollo/protobufjs": true
+  esbuild: true
+  protobufjs: true
+patchedDependencies:
+  kafkajs@2.2.4: patches/kafkajs@2.2.4.patch

@@ -8,16 +8,22 @@
     "node": ">=22"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit",
+    "dev:api": "pnpm --filter @devpulse/contracts build && pnpm --filter @devpulse/api dev",
+    "dev:worker": "pnpm --filter @devpulse/contracts build && pnpm --filter @devpulse/worker dev",
+    "dev:dashboard": "pnpm --filter @devpulse/dashboard dev",
+    "build": "pnpm --filter @devpulse/contracts build && pnpm --filter @devpulse/api build && pnpm --filter @devpulse/worker build && pnpm --filter @devpulse/dashboard build",
+    "db:migrate": "pnpm --filter @devpulse/api db:migrate",
+    "typecheck": "pnpm --filter @devpulse/contracts build && tsc --noEmit && pnpm --filter @devpulse/contracts typecheck && pnpm --filter @devpulse/api typecheck && pnpm --filter @devpulse/worker typecheck",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "vitest run packages/contracts/src"
+    "test": "vitest run",
+    "test:webhook:e2e": "node scripts/verify-local-webhook.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/node": "^24.0.0",
-    "eslint": "^9.0.0",
+    "eslint": "^10.0.1",
     "globals": "^16.0.0",
     "prettier": "^3.0.0",
     "typescript": "^5.0.0",

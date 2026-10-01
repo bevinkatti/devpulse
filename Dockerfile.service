@@ -1,0 +1,26 @@
+FROM node:24-bookworm-slim AS build
+WORKDIR /app
+RUN corepack enable && corepack prepare pnpm@11.13.1 --activate
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages/contracts/package.json packages/contracts/package.json
+COPY apps/api/package.json apps/api/package.json
+COPY apps/dashboard/package.json apps/dashboard/package.json
+COPY services/worker/package.json services/worker/package.json
+COPY patches patches
+RUN pnpm install --frozen-lockfile
+COPY . .
+ARG SERVICE
+RUN pnpm --filter @devpulse/contracts build
+RUN pnpm --filter "@devpulse/${SERVICE}" build
+
+FROM node:24-bookworm-slim AS runtime
+WORKDIR /app
+ENV NODE_ENV=production COREPACK_HOME=/home/node/.cache/node/corepack
+RUN mkdir -p "$COREPACK_HOME" && chown -R node:node /home/node
+RUN corepack enable && corepack prepare pnpm@11.13.1 --activate
+COPY --from=build --chown=node:node /app /app
+USER node
+ARG SERVICE
+ENV SERVICE=${SERVICE}
+EXPOSE 3000 4000
+CMD ["sh", "-c", "if [ \"$SERVICE\" = api ]; then pnpm --filter @devpulse/api db:migrate && cd apps/api && exec node dist/main.js; elif [ \"$SERVICE\" = worker ]; then cd services/worker && exec node dist/main.js; else cd apps/dashboard && exec node node_modules/next/dist/bin/next start --hostname 0.0.0.0; fi"]

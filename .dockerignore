@@ -1,0 +1,12 @@
+.git
+.pnpm-store
+.next
+node_modules
+**/node_modules
+.node_modules-validation-backup
+**/dist
+coverage
+*.log
+.env
+.env.*
+!.env.example

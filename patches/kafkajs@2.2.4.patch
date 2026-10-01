@@ -1,0 +1,16 @@
+diff --git a/src/network/requestQueue/index.js b/src/network/requestQueue/index.js
+index eee14d66c3869d90f7bac0ac755ecbad3f2a2741..b9ab1b7ea8ef90bb4723fa4ae581902779f51952 100644
+--- a/src/network/requestQueue/index.js
++++ b/src/network/requestQueue/index.js
+@@ -304,6 +304,11 @@ module.exports = class RequestQueue extends EventEmitter {
+    * the pending request queue eventually.
+    */
+   scheduleCheckPendingRequests() {
++    // There is no work to schedule when the pending queue is empty. Keeping
++    // this call out of setTimeout also avoids passing a negative timestamp as
++    // a delay on newer Node.js releases.
++    if (this.pending.length === 0) return
++
+     // If we're throttled: Schedule checkPendingRequests when the throttle
+     // should be resolved. If there is already something scheduled we assume that that
+     // will be fine, and potentially fix up a new timeout if needed at that time.

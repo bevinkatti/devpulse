@@ -1,1 +1,12 @@
 pnpm-lock.yaml
+.pnpm-store/
+node_modules/
+**/node_modules/
+.node_modules-validation-backup/
+dist/
+**/dist/
+coverage/
+.next/
+**/.next/
+.env
+.env.*

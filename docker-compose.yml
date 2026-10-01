@@ -1,0 +1,138 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: devpulse
+      POSTGRES_PASSWORD: devpulse
+      POSTGRES_DB: devpulse
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - devpulse-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U devpulse -d devpulse"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:v25.1.1
+    command:
+      - redpanda
+      - start
+      - --overprovisioned
+      - --smp
+      - "1"
+      - --memory
+      - 1G
+      - --reserve-memory
+      - 0M
+      - --node-id
+      - "0"
+      - --check=false
+      - --kafka-addr
+      - internal://0.0.0.0:9092,external://0.0.0.0:19092
+      - --advertise-kafka-addr
+      - internal://redpanda:9092,external://localhost:19092
+    ports:
+      - "127.0.0.1:19092:19092"
+      - "127.0.0.1:19644:9644"
+    volumes:
+      - devpulse-redpanda:/var/lib/redpanda/data
+    healthcheck:
+      test: ["CMD", "rpk", "cluster", "health"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  redpanda-init:
+    image: docker.redpanda.com/redpandadata/redpanda:v25.1.1
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    entrypoint:
+      - /bin/sh
+      - -c
+      - rpk -X brokers=redpanda:9092 topic describe devpulse.deliveries >/dev/null 2>&1 || rpk -X brokers=redpanda:9092 topic create devpulse.deliveries --partitions 3
+    restart: "no"
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE: api
+    environment:
+      NODE_ENV: development
+      API_PORT: 4000
+      API_BOOTSTRAP_TOKEN: ${API_BOOTSTRAP_TOKEN:-devpulse-local-bootstrap-only-change-before-use}
+      SIGNING_SECRET_ENCRYPTION_KEY: ${SIGNING_SECRET_ENCRYPTION_KEY:-4444444444444444444444444444444444444444444444444444444444444444}
+      DATABASE_URL: postgres://devpulse:devpulse@postgres:5432/devpulse
+      KAFKA_BROKERS: redpanda:9092
+      KAFKA_DELIVERY_TOPIC: devpulse.deliveries
+      ALLOW_PRIVATE_DESTINATIONS: "true"
+      CORS_ORIGINS: http://localhost:3000
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "127.0.0.1:4000:4000"
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redpanda-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:4000/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 4s
+      retries: 10
+      start_period: 20s
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE: worker
+    environment:
+      NODE_ENV: development
+      SIGNING_SECRET_ENCRYPTION_KEY: ${SIGNING_SECRET_ENCRYPTION_KEY:-4444444444444444444444444444444444444444444444444444444444444444}
+      DATABASE_URL: postgres://devpulse:devpulse@postgres:5432/devpulse
+      KAFKA_BROKERS: redpanda:9092
+      KAFKA_DELIVERY_TOPIC: devpulse.deliveries
+      ALLOW_PRIVATE_DESTINATIONS: "true"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    stop_grace_period: 30s
+    depends_on:
+      api:
+        condition: service_healthy
+      redpanda-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE: dashboard
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:4000
+    ports:
+      - "127.0.0.1:3000:3000"
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  devpulse-postgres:
+  devpulse-redpanda:

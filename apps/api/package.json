@@ -1,0 +1,33 @@
+{
+  "name": "@devpulse/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "start": "node dist/main.js",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "db:migrate": "tsx src/migrate.ts"
+  },
+  "dependencies": {
+    "@as-integrations/express5": "^1.1.2",
+    "@apollo/server": "^5.0.0",
+    "@devpulse/contracts": "workspace:*",
+    "@nestjs/apollo": "^13.2.0",
+    "@nestjs/common": "^11.1.0",
+    "@nestjs/core": "^11.1.0",
+    "@nestjs/graphql": "^13.2.0",
+    "@nestjs/platform-express": "^11.1.0",
+    "express": "^5.1.0",
+    "graphql": "^16.11.0",
+    "pg": "^8.16.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/pg": "^8.15.0",
+    "tsx": "^4.20.0"
+  }
+}

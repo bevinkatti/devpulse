@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: devpulse
+          POSTGRES_PASSWORD: devpulse
+          POSTGRES_DB: devpulse
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U devpulse -d devpulse"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.13.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm format:check
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - name: Apply and verify migrations
+        run: |
+          pnpm db:migrate
+          pnpm db:migrate
+        env:
+          DATABASE_URL: postgres://devpulse:devpulse@localhost:5432/devpulse
+      - run: pnpm test
+        env:
+          TEST_DATABASE_URL: postgres://devpulse:devpulse@localhost:5432/devpulse
+      - run: pnpm build
+        env:
+          NEXT_TELEMETRY_DISABLED: 1
+          NEXT_PUBLIC_API_URL: http://localhost:4000

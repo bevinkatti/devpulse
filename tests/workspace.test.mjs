@@ -1,6 +1,13 @@
-﻿import test from "node:test";
-import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import { describe, expect, it } from "vitest";
 
-test("DevPulse workspace has a valid baseline", () => {
-  assert.equal(2 + 2, 4);
+describe("DevPulse workspace", () => {
+  it("declares the local migration and verification commands", async () => {
+    const packageJson = JSON.parse(
+      await readFile(new URL("../package.json", import.meta.url), "utf8"),
+    );
+    expect(packageJson.name).toBe("devpulse");
+    expect(packageJson.scripts["db:migrate"]).toBeDefined();
+    expect(packageJson.scripts.test).toBe("vitest run");
+  });
 });
